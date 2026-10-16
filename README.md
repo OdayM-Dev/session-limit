@@ -6,7 +6,7 @@
 
 It sounds a siren that rises as the limit runs out, spins while Claude works, and chimes when a long reply is done.
 
-![version](https://img.shields.io/badge/version-0.9.0-D97757)
+![version](https://img.shields.io/badge/version-1.0.0-D97757)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -70,10 +70,12 @@ pip install numpy pillow
 
 ```bash
 claude plugin marketplace add malik-telegram/session-limit
-claude plugin install session-limit@my-mods
+claude plugin install session-limit@odaym-plugins
 ```
 
 Start a new Claude Code session. The ring appears on its own.
+
+If Python or a package is missing, a message in Claude says what to install.
 
 ## Usage
 
@@ -134,7 +136,7 @@ flowchart LR
 1. Right-click the ring, untick **Start with Windows**, then choose **Quit**.
 2. Remove the plugin:
    ```bash
-   claude plugin uninstall session-limit@my-mods
+   claude plugin uninstall session-limit@odaym-plugins
    ```
 3. Optionally, delete the folder `%USERPROFILE%\.claude\session-limit` to remove its saved readings.
 
@@ -210,7 +212,7 @@ pip install numpy pillow
 
 ```bash
 claude plugin marketplace add malik-telegram/session-limit
-claude plugin install session-limit@my-mods
+claude plugin install session-limit@odaym-plugins
 ```
 
 </div>

@@ -28,8 +28,20 @@ from ctypes import wintypes
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+try:
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont
+except ImportError as missing:  # opened by hand or at sign-in without them: pythonw has no console to say so
+    ctypes.windll.user32.MessageBoxW(
+        None,
+        "The ring needs the Python packages numpy and pillow.\n"
+        "تحتاج الدائرة إلى حزمتي numpy و pillow.\n\n"
+        "pip install numpy pillow\n\n"
+        f"({missing})",
+        "Session limit · حدّ الجلسة",
+        0x30,  # MB_ICONWARNING
+    )
+    sys.exit(1)
 
 HERE = Path(__file__).resolve().parent
 # What the plugin writes and the ring keeps, in one place whichever copy runs

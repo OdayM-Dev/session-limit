@@ -19,11 +19,15 @@ const disk = (on: On) => {
     const text = files.get(e.path.replaceAll('\\', '/'))
     return text === undefined ? { deny: 'no such file' } : { value: text }
   })
-  const read = (suffix: string) => {
-    const key = [...files.keys()].find(k => k.endsWith(suffix))
+  // By name within the plugin's data folder, wherever the plugin sits: ~/.claude/session-limit
+  // when installed, its widget folder when run from a checkout.
+  const read = (name: string) => {
+    const key = [...files.keys()].find(k => k.endsWith(`/${name}`))
     return key === undefined ? undefined : JSON.parse(files.get(key) ?? '')
   }
-  return { files, read }
+  // That folder, once the module has written usage.json into it.
+  const folder = () => [...files.keys()].find(k => k.endsWith('/usage.json'))?.slice(0, -'/usage.json'.length)
+  return { files, read, folder }
 }
 
 test('readings build up a history within one 5-hour window', async ($, on) => {
@@ -36,15 +40,15 @@ test('readings build up a history within one 5-hour window', async ($, on) => {
   await measure(43)
   await clock.advance(5 * MINUTE)
   await measure(44, '2026-10-09T04:39:59.779Z') // the same window, its reset read a little apart
-  expect(read('/.claude/session-limit/usage.json').history).toEqual([
+  expect(read('usage.json').history).toEqual([
     [NOW, 43],
     [NOW + 5 * MINUTE, 44],
   ])
-  expect(read('/.claude/session-limit/usage.json').limits[0].percentUsed).toBe(44)
+  expect(read('usage.json').limits[0].percentUsed).toBe(44)
 
   await clock.advance(MINUTE)
   await measure(2, '2026-10-09T09:40:00.000Z') // a new window starts over
-  expect(read('/.claude/session-limit/usage.json').history).toEqual([[NOW + 6 * MINUTE, 2]])
+  expect(read('usage.json').history).toEqual([[NOW + 6 * MINUTE, 2]])
 })
 
 test('the session reports working, then done with how long it took', async ($, on) => {
@@ -56,16 +60,16 @@ test('the session reports working, then done with how long it took', async ($, o
   const done = { answer: '', isAborted: false, turnId: 't1', reason: 'answer' } as const
 
   await $.turn.start({ text: 'hi', turnId: 't1' })
-  expect(read('/.claude/session-limit/sessions/abc.json')).toMatchObject({ working: true, since: NOW })
+  expect(read('sessions/abc.json')).toMatchObject({ working: true, since: NOW })
 
   await clock.advance(25_000) // the heartbeat keeps a long turn fresh
-  expect(read('/.claude/session-limit/sessions/abc.json')).toMatchObject({ working: true, updatedAt: NOW + 20_000 })
+  expect(read('sessions/abc.json')).toMatchObject({ working: true, updatedAt: NOW + 20_000 })
 
   await $.turn.complete({ ...done, durationMs: 9_000, agentId: 'sub' }) // a subagent's end is not ours
-  expect(read('/.claude/session-limit/sessions/abc.json').working).toBe(true)
+  expect(read('sessions/abc.json').working).toBe(true)
 
   await $.turn.complete({ ...done, durationMs: 25_000 })
-  expect(read('/.claude/session-limit/sessions/abc.json')).toMatchObject({
+  expect(read('sessions/abc.json')).toMatchObject({
     working: false,
     doneAt: NOW + 25_000,
     lastDurationMs: 25_000,
@@ -91,7 +95,7 @@ test('the ring starts when the desktop app or a terminal attaches', async ($, on
 
 test('the refresh button gets one session to fetch a fresh reading', async ($, on) => {
   const clock = mock.clock(on, { now: NOW })
-  const { files, read } = disk(on)
+  const { files, read, folder } = disk(on)
   const calls: string[] = []
   on('session.id', () => ({ value: 'abc' }))
   on('session.attach', (_$, e) => ({ clientId: e.clientId }))
@@ -102,16 +106,71 @@ test('the refresh button gets one session to fetch a fresh reading', async ($, o
   })
   on('session.usage', () => ({ value: { startedAt: NOW, context: { window: 1_000_000 }, rateLimits: limits(31) } }))
 
+  on('session.measure', (_$, e) => ({ changed: e.changed }))
+
   await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+  await $.session.measure({ context: { window: 1_000_000 }, rateLimits: limits(20), changed: ['rateLimits'] })
   await clock.advance(4_000)
   expect(calls).toEqual([]) // nobody asked
 
-  files.set('C:/Users/ACER ODAY/.claude/session-limit/refresh.json', JSON.stringify({ askedAt: NOW + 4_000 }))
+  files.set(`${folder()}/refresh.json`, JSON.stringify({ askedAt: NOW + 4_000 }))
   await clock.advance(3_000)
   expect(calls).toEqual(['haiku'])
-  expect(read('/.claude/session-limit/usage.json').limits[0].percentUsed).toBe(31)
-  expect(read('/.claude/session-limit/refresh-done.json')).toEqual({ askedAt: NOW + 4_000, by: 'abc' })
+  expect(read('usage.json').limits[0].percentUsed).toBe(31)
+  expect(read('refresh-done.json')).toEqual({ askedAt: NOW + 4_000, by: 'abc' })
 
   await clock.advance(6_000)
   expect(calls).toEqual(['haiku']) // answered once
+})
+
+test("a missing package is named once, in the ring's language", async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  disk(on)
+  const toasts: string[] = []
+  const runs: (readonly string[])[] = []
+  on('process.run', (_$, e) => (runs.push(e.argv), { value: { ...RAN, stdout: 'missing:numpy pillow\r\n' } }))
+  on('session.attach', (_$, e) => ({ clientId: e.clientId }))
+  on('ui.toast', (_$, e) => (toasts.push(e.text), { value: undefined }))
+
+  await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+  await clock.settle()
+  expect(runs[0]?.at(-1)).toMatch(/& \$c '.*\\widget\\check\.py'/)
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('pip install numpy pillow')
+  expect(toasts[0]).toContain('حدّ الجلسة') // no state.json yet: Arabic, as the ring starts
+
+  await $.session.attach({ surface: 'terminal', clientId: 'terminal:default' })
+  await clock.settle()
+  expect(toasts.length).toBe(1) // once a session
+})
+
+test('no Python at all is said in English when the ring is set to English', async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  const { files, folder } = disk(on)
+  const toasts: string[] = []
+  on('process.run', () => ({ value: { ...RAN, stdout: 'no-python\r\n' } }))
+  on('session.attach', (_$, e) => ({ clientId: e.clientId }))
+  on('session.measure', (_$, e) => ({ changed: e.changed }))
+  on('ui.toast', (_$, e) => (toasts.push(e.text), { value: undefined }))
+
+  await $.session.measure({ context: { window: 1_000_000 }, rateLimits: limits(20), changed: ['rateLimits'] })
+  files.set(`${folder()}/state.json`, JSON.stringify({ lang: 'en' }))
+  await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+  await clock.settle()
+  expect(toasts).toEqual([
+    'Session limit: the ring needs Python 3. Install it from python.org with "Add python.exe to PATH" ticked, then start a new session.',
+  ])
+})
+
+test('with everything in place the ring just starts, with no toast', async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  disk(on)
+  const toasts: string[] = []
+  on('process.run', () => ({ value: RAN }))
+  on('session.attach', (_$, e) => ({ clientId: e.clientId }))
+  on('ui.toast', (_$, e) => (toasts.push(e.text), { value: undefined }))
+
+  await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+  await clock.settle()
+  expect(toasts).toEqual([])
 })

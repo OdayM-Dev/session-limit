@@ -48,17 +48,52 @@ const save = async ($: EngineInterface, limits: SessionRateLimit[]) => {
   )
 }
 
+// The ring's own language (its menu sets it), so a warning reads like the ring.
+const language = async ($: EngineInterface) => {
+  try {
+    return (JSON.parse(await $.fs.read(`${data($)}/state.json`)) as { lang?: string }).lang === 'en' ? 'en' : 'ar'
+  } catch {
+    return 'ar'
+  }
+}
+
+// What the ring lacks, said once a session: without it pythonw fails with no window to say so.
+let warned = false
+
+const warn = async ($: EngineInterface, missing: string) => {
+  if (warned) return
+  warned = true
+  const en = (await language($)) === 'en'
+  const text =
+    missing === 'python'
+      ? en
+        ? 'Session limit: the ring needs Python 3. Install it from python.org with "Add python.exe to PATH" ticked, then start a new session.'
+        : 'حدّ الجلسة: تحتاج الدائرة إلى Python 3. ثبّته من python.org مع تفعيل خيار Add python.exe to PATH، ثم افتح جلسة جديدة.'
+      : en
+        ? `Session limit: the ring needs ${missing}. Run: pip install ${missing}, then start a new session.`
+        : `حدّ الجلسة: تحتاج الدائرة إلى ${missing}. شغّل: pip install ${missing} ثم افتح جلسة جديدة.`
+  $.ui.toast(text, { timeoutMs: 20_000 })
+}
+
 // Starts the ring detached, so it outlives the session; it keeps itself to one copy.
-const launch = ($: EngineInterface) => {
+// First it checks Python and the packages the ring draws with, and names what is missing.
+const launch = async ($: EngineInterface) => {
   if (!isWindows($)) return
-  const script = `${$.plugin.root}\\widget\\widget.pyw`.replace(/'/g, "''")
+  const quote = (path: string) => path.replace(/'/g, "''")
+  const script = quote(`${$.plugin.root}\\widget\\widget.pyw`)
+  const check = quote(`${$.plugin.root}\\widget\\check.py`)
   const command = [
     '$p = (Get-Command pythonw.exe, pyw.exe -ErrorAction SilentlyContinue | Select-Object -First 1).Source',
-    `if ($p) { Start-Process -FilePath $p -ArgumentList '"${script}"' }`,
+    "if (-not $p) { 'no-python'; exit }",
+    // pythonw has no output to answer with; its console twin beside it does.
+    "$c = $p -replace 'pythonw\\.exe$', 'python.exe' -replace 'pyw\\.exe$', 'py.exe'",
+    `if (Test-Path $c) { $m = & $c '${check}'; if ($m) { "missing:$m"; exit } }`,
+    `Start-Process -FilePath $p -ArgumentList '"${script}"'`,
   ].join('; ')
-  void $.process
-    .run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', command])
-    .catch(() => undefined)
+  const { stdout } = await $.process.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', command])
+  const said = stdout.trim()
+  if (said === 'no-python') await warn($, 'python')
+  else if (said.startsWith('missing:')) await warn($, said.slice('missing:'.length).trim())
 }
 
 // This session's state for the ring: it spins while `working`, chimes when
@@ -108,7 +143,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     listen($)
-    if (e.isInteractive) launch($)
+    if (e.isInteractive) void quietly(launch($))
 
     try {
       const { rateLimits } = await $.session.usage()
@@ -123,7 +158,7 @@ export const register: Register = on => {
   // The desktop app's sessions start headless and gain their window here.
   on('session.attach', ($, e, next) => {
     listen($)
-    if (e.surface === 'desktop' || e.surface === 'terminal') launch($)
+    if (e.surface === 'desktop' || e.surface === 'terminal') void quietly(launch($))
 
     return next(e)
   })
