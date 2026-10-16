@@ -9,6 +9,7 @@ It sounds a siren that rises as the limit runs out, spins while Claude works, an
 ![version](https://img.shields.io/badge/version-0.9.0-D97757)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [English](#features) · [العربية](#بالعربي)
 
@@ -156,6 +157,10 @@ docs/
   render_docs.py     redraws the README images with the widget's own code
 ```
 
+## License
+
+[MIT](LICENSE) © malik-telegram
+
 ---
 
 <div dir="rtl">
@@ -226,5 +231,9 @@ claude plugin install session-limit@my-mods
 ### الخصوصية
 
 كل البيانات تبقى على جهازك في `%USERPROFILE%\.claude\session-limit`. ما يطلع منها شي إلا لما تضغط **تحديث الآن**، وقتها تروح طلبة صغيرة جداً لـ Haiku (توكن واحد) من جلستك.
+
+### الرخصة
+
+[MIT](LICENSE): تقدر تستخدمها وتعدّل عليها وتنشرها ببلاش، بشرط يبقى نص الرخصة واسم صاحبها.
 
 </div>
