@@ -1,7 +1,7 @@
 {
   "name": "odaym-plugins",
   "owner": {
-    "name": "malik-telegram"
+    "name": "OdayM-Dev"
   },
   "description": "A floating ring for Claude's session limit on Windows",
   "plugins": [

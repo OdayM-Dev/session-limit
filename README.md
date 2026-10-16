@@ -6,7 +6,7 @@
 
 It sounds a siren that rises as the limit runs out, spins while Claude works, and chimes when a long reply is done.
 
-![version](https://img.shields.io/badge/version-1.0.0-D97757)
+![version](https://img.shields.io/badge/version-1.0.1-D97757)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -63,13 +63,13 @@ pip install numpy pillow
 ### From claude.ai
 
 1. Open **Customize** → **Plugins** → **Add** → **Add marketplace**
-2. Enter `malik-telegram/session-limit`
+2. Enter `OdayM-Dev/session-limit`
 3. Install **session-limit**
 
 ### From the terminal
 
 ```bash
-claude plugin marketplace add malik-telegram/session-limit
+claude plugin marketplace add OdayM-Dev/session-limit
 claude plugin install session-limit@odaym-plugins
 ```
 
@@ -161,7 +161,7 @@ docs/
 
 ## License
 
-[MIT](LICENSE) © malik-telegram
+[MIT](LICENSE) © OdayM-Dev
 
 ---
 
@@ -204,14 +204,14 @@ pip install numpy pillow
 
 ### التنصيب
 
-**من claude.ai:** افتح Customize ← Plugins ← Add marketplace، واكتب `malik-telegram/session-limit`، ونصّب **session-limit**.
+**من claude.ai:** افتح Customize ← Plugins ← Add marketplace، واكتب `OdayM-Dev/session-limit`، ونصّب **session-limit**.
 
 **من الطرفية:**
 
 <div dir="ltr">
 
 ```bash
-claude plugin marketplace add malik-telegram/session-limit
+claude plugin marketplace add OdayM-Dev/session-limit
 claude plugin install session-limit@odaym-plugins
 ```
 
