@@ -1,0 +1,5 @@
+widget/usage.json
+widget/state.json
+widget/widget.log
+widget/sessions/
+widget/__pycache__/

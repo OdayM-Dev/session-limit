@@ -1,0 +1,5 @@
+{
+  "name": "session-limit",
+  "version": "0.9.0",
+  "description": "A floating ring for the session limit: a siren that rises as it runs out, a spinner while Claude works, a chime when it's done, and a hover card with a usage graph and forecast"
+}
