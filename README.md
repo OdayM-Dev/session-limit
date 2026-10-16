@@ -12,6 +12,10 @@ It sounds a siren that rises as the limit runs out, spins while Claude works, an
 
 [English](#features) · [العربية](#بالعربي)
 
+<br>
+
+<img src="docs/card.png" width="600" alt="The ring at 28% left beside its hover card: a usage graph, a forecast that the limit runs out at 3:00, the weekly limit, chat context and Claude working">
+
 </div>
 
 ---
@@ -30,6 +34,13 @@ It sounds a siren that rises as the limit runs out, spins while Claude works, an
 - **Refresh on demand.** Picks up usage from claude.ai too, not just Claude Code.
 - **Codex support.** If you use OpenAI Codex, a second teal ring tracks its limits. It can also follow Codex on your SSH servers (off by default).
 - **Arabic and English.** Right-to-left layout in Arabic. Switch from the right-click menu.
+
+<p align="center">
+  <img src="docs/ring.gif" width="170" alt="The ring running down from 62% to 6% while Claude works, turning amber and then pulsing red">
+  &nbsp;&nbsp;
+  <img src="docs/states.png" width="450" alt="The ring in green at 78%, amber at 26% and red at 7%">
+</p>
+<p align="center"><sub>Spinning while Claude works · green, amber at 30%, red with a pulsing glow at 10%</sub></p>
 
 ## Requirements
 
@@ -141,6 +152,8 @@ widget/
   ring.ico
 tests/
   session-limit.test.ts
+docs/
+  render_docs.py     redraws the README images with the widget's own code
 ```
 
 ---
@@ -150,6 +163,8 @@ tests/
 ## بالعربي
 
 **دائرة عائمة على سطح مكتب ويندوز توريك كم باقي من حدّ Claude للخمس ساعات.**
+
+<p align="center"><img src="docs/card-ar.png" width="600" alt="الدائرة عند 28% وجنبها بطاقة التفاصيل بالعربي"></p>
 
 ### المميزات
 
